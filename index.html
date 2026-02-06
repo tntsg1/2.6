@@ -1,0 +1,776 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The 1941 Bulletin: Pearl Harbor Special</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  
+  <!-- Regenerator Runtime (Fixes async/await crashes in Babel Standalone) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/regenerator-runtime/0.13.11/runtime.min.js"></script>
+
+  <!-- React & ReactDOM (UMD) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  
+  <!-- Babel Standalone -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Google GenAI SDK (ESM) -->
+  <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.sh/@google/genai@0.0.1"
+      }
+    }
+  </script>
+  <script type="module">
+    import { GoogleGenAI } from "@google/genai";
+    window.GoogleGenAI = GoogleGenAI;
+  </script>
+
+  <style>
+    body {
+      background-color: #f4ece1;
+      margin: 0;
+    }
+    .paper-texture {
+      background-image: url('https://www.transparenttextures.com/patterns/paper-fibers.png');
+    }
+    .newspaper-font {
+      font-family: 'Playfair Display', serif;
+    }
+    .body-font {
+      font-family: 'EB+Garamond', serif;
+    }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #e6ddd0;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #52525b;
+      border-radius: 5px;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.8s ease-out forwards;
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div style="height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; flex-direction: column; gap: 20px; color: #444;">
+      <div style="width: 40px; height: 40px; border: 4px solid #ddd; border-top-color: #333; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <p>Loading The 1941 Bulletin...</p>
+      <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+    </div>
+  </div>
+
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useRef } = React;
+
+    // --- ICONS ---
+    const IconNewspaper = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-8"/></svg>;
+    const IconAlertCircle = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>;
+    const IconGlobe = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4 10z"/></svg>;
+    const IconUser = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+    const IconSend = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
+    const IconMessage = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>;
+    const IconStar = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+    const IconInfo = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>;
+    const IconRefresh = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>;
+    const IconUpload = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>;
+    const IconTrash = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
+    const IconCheck = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>;
+
+    // --- AI SERVICE CONFIG ---
+    const API_KEY = ''; 
+    
+    const getAI = () => {
+      if (!window.GoogleGenAI) {
+        throw new Error("SDK_NOT_LOADED");
+      }
+      return new window.GoogleGenAI({ apiKey: API_KEY });
+    };
+
+    const generateHistoricalAnalysis = async (userClaim) => {
+      if (!API_KEY) return "Simulation: I agree! (Edit the HTML file and add your API_KEY to see full AI analysis)";
+      try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+          model: "gemini-1.5-pro", 
+          contents: `Analyze the following claim about WWII: "${userClaim}". 
+          Evaluate its historical accuracy, provide a counter-perspective, and ask one deeply nuanced question. 
+          Keep the tone professional and scholarly.`,
+        });
+        return response.text;
+      } catch (e) {
+        if(e.message === "SDK_NOT_LOADED") return "Error: Browser blocked AI script loading (likely due to file:// protocol).";
+        return "AI Service Unavailable: " + e.message;
+      }
+    };
+
+    const generateClassmateReply = async (postContent) => {
+      if (!API_KEY) return "Simulation: That's a fascinating perspective! (Edit the HTML file and add your API_KEY to see full AI reply)";
+      try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+          model: "gemini-1.5-flash",
+          contents: `Roleplay as a curious college student. Reply to: "${postContent}". 
+          Extend the conversation. Ask a nuanced question.`,
+        });
+        return response.text;
+      } catch (e) {
+         if(e.message === "SDK_NOT_LOADED") return "Error: Browser blocked AI script loading (likely due to file:// protocol).";
+         return "AI Service Unavailable.";
+      }
+    };
+
+    // --- INDEXED DB HELPER (Better than LocalStorage) ---
+    const DB_NAME = 'PearlHarborNewsDB';
+    const STORE_NAME = 'images';
+    const IMG_KEY = 'main_image';
+
+    const initDB = () => {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME);
+          }
+        };
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+      });
+    };
+
+    const saveImageToDB = async (blob) => {
+      const db = await initDB();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.put(blob, IMG_KEY);
+        request.onsuccess = () => resolve();
+        request.onerror = (e) => reject(e);
+      });
+    };
+
+    const getImageFromDB = async () => {
+      const db = await initDB();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get(IMG_KEY);
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (e) => reject(e);
+      });
+    };
+    
+    const clearImageFromDB = async () => {
+      const db = await initDB();
+       return new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(IMG_KEY);
+        request.onsuccess = () => resolve();
+        request.onerror = (e) => reject(e);
+      });
+    }
+
+    // --- COMPONENTS ---
+
+    const NewspaperSection = () => {
+      // Default fallback
+      const [imgSrc, setImgSrc] = useState("pearl-harbor.jpg");
+      const [error, setError] = useState(false);
+      const [isSaved, setIsSaved] = useState(false);
+      const fileInputRef = useRef(null);
+
+      // Load from DB on mount
+      useEffect(() => {
+        const loadSavedImage = async () => {
+          try {
+            const savedBlob = await getImageFromDB();
+            if (savedBlob) {
+              const url = URL.createObjectURL(savedBlob);
+              setImgSrc(url);
+              setIsSaved(true);
+            }
+          } catch (e) {
+            console.error("DB Load Error", e);
+          }
+        };
+        loadSavedImage();
+      }, []);
+
+      const handleImageError = () => {
+        setError(true);
+      };
+
+      const handleManualUpload = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          try {
+            // Save to IndexedDB (Persistent)
+            await saveImageToDB(file);
+            
+            // Display immediately
+            const url = URL.createObjectURL(file);
+            setImgSrc(url);
+            setError(false);
+            setIsSaved(true);
+          } catch (err) {
+            console.error("Save failed", err);
+            alert("Could not save to database. Will display temporarily.");
+            const url = URL.createObjectURL(file);
+            setImgSrc(url);
+          }
+        }
+      };
+
+      const handleResetImage = async () => {
+        try {
+          await clearImageFromDB();
+          setImgSrc("pearl-harbor.jpg"); // Revert to file path
+          setIsSaved(false);
+          // Small timeout to reset error state if needed
+          setTimeout(() => setError(false), 100);
+        } catch (e) {
+          console.error("Could not clear DB");
+        }
+      };
+
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-8 border-r-0 lg:border-r border-zinc-300 pr-0 lg:pr-8">
+            <article className="mb-12">
+              <div className="mb-6 bg-zinc-800 relative group min-h-[400px] flex flex-col items-center justify-center border-4 border-zinc-900 shadow-xl">
+                {!error ? (
+                  <img 
+                    src={imgSrc} 
+                    onError={handleImageError}
+                    alt="Pearl Harbor Attack Scene" 
+                    className="w-full h-auto object-cover grayscale contrast-125"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-8 text-center bg-zinc-900 w-full h-full min-h-[400px] gap-4">
+                    <IconAlertCircle className="w-16 h-16 text-zinc-600" />
+                    <div className="space-y-2">
+                      <p className="text-zinc-400 font-bold">Image not found.</p>
+                      <p className="text-zinc-500 text-sm">Ensure 'pearl-harbor.jpg' is in the folder OR upload one.</p>
+                    </div>
+                    <button 
+                      onClick={() => fileInputRef.current.click()}
+                      className="px-6 py-3 bg-zinc-100 text-zinc-900 font-bold uppercase tracking-widest hover:bg-white transition-colors flex items-center gap-2 rounded-sm"
+                    >
+                      <IconUpload className="w-5 h-5" />
+                      Select Image
+                    </button>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      onChange={handleManualUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                  </div>
+                )}
+                
+                {/* Overlay Caption & Controls */}
+                <div className="absolute bottom-0 left-0 right-0 p-2 bg-zinc-900/90 border-t-2 border-zinc-600 z-10 flex flex-col md:flex-row justify-between items-center gap-2">
+                  <p className="text-white text-xs font-bold font-serif uppercase tracking-wider text-center flex-grow">
+                    Fig 1. - USS West Virginia and USS Tennessee in flames - December 7, 1941
+                  </p>
+                  
+                  {/* Status Indicator */}
+                  {isSaved && !error && (
+                    <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-green-400 bg-green-900/30 px-2 py-1 rounded border border-green-800">
+                      <IconCheck className="w-3 h-3" />
+                      Saved
+                    </span>
+                  )}
+                  
+                  {/* Controls */}
+                  {!error && (
+                    <div className="flex gap-2">
+                       <button 
+                        onClick={() => fileInputRef.current.click()}
+                        title="Change Image"
+                        className="p-1 bg-zinc-700 text-white rounded hover:bg-zinc-600 transition-colors"
+                      >
+                        <IconUpload className="w-3 h-3" />
+                      </button>
+                      <button 
+                        onClick={handleResetImage}
+                        title="Reset to Default"
+                        className="p-1 bg-zinc-700 text-red-300 rounded hover:bg-red-900/50 transition-colors"
+                      >
+                        <IconTrash className="w-3 h-3" />
+                      </button>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef}
+                        onChange={handleManualUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="columns-1 md:columns-2 gap-8 text-justify body-font text-lg leading-relaxed text-zinc-900">
+                <p className="mb-4 first-letter:text-7xl first-letter:font-black first-letter:mr-3 first-letter:float-left first-letter:leading-[0.8]">
+                  HONOLULU, DEC. 7 — Sudden death and destruction rained down from the skies this morning as hundreds of Japanese warplanes launched a coordinated surprise attack on the United States Pacific Fleet anchored at Pearl Harbor. The strike, occurring shortly before 8:00 AM local time, has left the nation in a state of unprecedented shock and mourning.
+                </p>
+                <p className="mb-4">
+                  Eyewitnesses report waves of dive bombers and torpedo planes sweeping across the harbor, targeting "Battleship Row" with devastating precision. The USS Arizona, a pride of the Navy, was reportedly struck in its forward magazine, causing a massive explosion that has sent it to the harbor floor.
+                </p>
+                <blockquote className="my-6 py-4 border-y-4 border-double border-zinc-300 text-center italic text-2xl font-bold text-zinc-800 newspaper-font">
+                  "This is the end of isolation. We are no longer spectators in this global tragedy; we are now the stage."
+                </blockquote>
+                <p className="mb-4">
+                  For years, the debate over American involvement in the overseas conflict has raged in the halls of Congress. Isolationist sentiment, once powerful enough to keep the U.S. strictly neutral, has been shattered in a matter of minutes. This event does more than just push the nation closer to war—it effectively declares the end of an era. 
+                </p>
+                <p>
+                  The calculated nature of the attack, launched while diplomatic envoys were still in Washington, has galvanized public opinion. President Roosevelt is expected to address a joint session of Congress tomorrow, where he will likely ask for a formal declaration of war. The sleeping giant has been awakened, and the path to global conflagration is now certain.
+                </p>
+              </div>
+            </article>
+
+            <div className="bg-zinc-900 text-white p-8 rounded-sm mb-12 transform -rotate-1 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent animate-pulse"></div>
+              <div className="flex items-center gap-3 mb-6 border-b border-zinc-700 pb-4">
+                <div className="bg-red-600 text-white px-3 py-1 text-xs font-black uppercase tracking-widest animate-pulse">
+                  Flash Bulletin
+                </div>
+                <span className="uppercase tracking-widest font-bold text-xs text-zinc-400">War Department Dispatch • 14:00 EST</span>
+              </div>
+              
+              <h3 className="newspaper-font text-4xl font-black mb-6 leading-tight">Why This Means Total War</h3>
+              
+              <div className="space-y-6 body-font text-xl opacity-90">
+                <div className="flex gap-4 items-start">
+                  <span className="font-black text-red-500 text-3xl font-serif">I.</span>
+                  <div>
+                    <h4 className="font-bold text-white uppercase text-sm tracking-wider mb-1">Direct Sovereignty Violation</h4>
+                    <p className="text-zinc-300 text-base">For the first time since 1812, American soil has been attacked by a foreign power, necessitating an immediate defensive response.</p>
+                  </div>
+                </div>
+                <div className="flex gap-4 items-start">
+                  <span className="font-black text-red-500 text-3xl font-serif">II.</span>
+                  <div>
+                    <h4 className="font-bold text-white uppercase text-sm tracking-wider mb-1">Diplomatic Treachery</h4>
+                    <p className="text-zinc-300 text-base">The attack while negotiations were active has united a fractured American public against the Axis Powers.</p>
+                  </div>
+                </div>
+                <div className="flex gap-4 items-start">
+                  <span className="font-black text-red-500 text-3xl font-serif">III.</span>
+                  <div>
+                    <h4 className="font-bold text-white uppercase text-sm tracking-wider mb-1">Strategic Necessity</h4>
+                    <p className="text-zinc-300 text-base">With the Pacific Fleet crippled, the U.S. must mobilize all resources to protect its western coast and Pacific territories.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-4 space-y-8">
+            <div className="border-4 border-zinc-900 p-6 bg-[#eae4d9]">
+              <h4 className="newspaper-font text-2xl font-black uppercase mb-4 border-b-4 border-zinc-900 pb-2 text-center">Casualty Report</h4>
+              <p className="text-sm body-font italic mb-6 text-center">Early estimates suggest heavy losses among both military personnel and civilians.</p>
+              <div className="space-y-4 font-mono text-sm">
+                <div className="flex justify-between border-b border-zinc-400 pb-2 border-dashed">
+                  <span className="font-bold uppercase">Battleships Lost</span>
+                  <span className="font-black text-red-800">4</span>
+                </div>
+                <div className="flex justify-between border-b border-zinc-400 pb-2 border-dashed">
+                  <span className="font-bold uppercase">Aircraft Destroyed</span>
+                  <span className="font-black text-red-800">188</span>
+                </div>
+                <div className="flex justify-between border-b border-zinc-400 pb-2 border-dashed">
+                  <span className="font-bold uppercase">Personnel</span>
+                  <span className="font-black text-red-800">2,403</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-amber-100/50 p-6 border-2 border-amber-900/20 relative">
+              <IconGlobe className="w-12 h-12 text-amber-900/20 absolute top-4 right-4" />
+              <h4 className="newspaper-font text-xl font-bold mb-4 uppercase tracking-wide border-b border-amber-900/20 pb-2">Global Reaction</h4>
+              <p className="text-base body-font leading-relaxed text-justify mb-4">
+                London reports Prime Minister <span className="font-bold small-caps">Churchill</span> has been in immediate contact with President Roosevelt. Reports from Berlin and Rome suggest celebrations among Axis leadership. 
+              </p>
+              <p className="text-base body-font leading-relaxed text-justify">
+                The world holds its breath as the Pacific theater becomes the new focal point of the Great War.
+              </p>
+            </div>
+
+            <div className="p-6 border-l-4 border-zinc-400 bg-white/40">
+              <h4 className="text-xs uppercase font-bold tracking-widest text-zinc-500 mb-2">Editorial Note</h4>
+              <p className="text-sm italic text-zinc-600 body-font">
+                This special edition was rushed to press at 1:15 PM PST. Information is fluid and subject to change. The Bulletin stands with our servicemen in this dark hour.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const DiscussionBoard = () => {
+      // PRE-POPULATED DATA
+      const [posts, setPosts] = useState([
+        {
+          id: '2',
+          title: 'I think the entry in WWII was inevitable',
+          content: 'I think the entry in WWII was inevitable because without the US\'s help, Fascism or dictatorships such as Nazi Germany and Italy would continue spreading throughout Europe and eventually Asia as well. So, in an act of defense we probably would have entered the war. For example, without the US helping Britain (and France), they would not have been able to take back land in France and eventually more of Europe.',
+          author: 'Justin Liu',
+          comments: [
+            {
+              id: 'c-justin-1',
+              author: 'Stephen Huang',
+              text: 'With the expansion of Japanese and German Nazi forces, after Japan finished its war with China, it would set its sights on the United States to the east. Similarly, once Nazi Germany controlled Europe, it would effectively have the United States by the throat. Therefore, American involvement in the war was inevitable and a necessary precaution.',
+              timestamp: 'Just now',
+              replies: []
+            }
+          ]
+        },
+        {
+          id: '1',
+          title: 'The Oil Embargo was the Trigger',
+          content: 'I believe the U.S. entry was inevitable because of the 1941 oil embargo. Japan was desperate for resources to continue their campaign in China. Even without Pearl Harbor, they would have attacked Dutch East Indies or Philippines, which would have forced the US hand eventually.',
+          author: 'HistoricalStudent42',
+          comments: [
+            {
+              id: 'c1',
+              author: 'Alex_History_Buff',
+              text: 'Great point! But do you think FDR could have actually sold a war to the public if Japan had ONLY attacked the Dutch East Indies? Isolationism was very strong.',
+              timestamp: '2 hours ago',
+              replies: []
+            }
+          ]
+        }
+      ]);
+
+      const [newPost, setNewPost] = useState({ title: '', content: '' });
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [isReplying, setIsReplying] = useState(null);
+
+      const handlePostSubmit = async (e) => {
+        try {
+          e.preventDefault();
+          if (!newPost.content.trim()) return;
+
+          setIsSubmitting(true);
+          const postId = Date.now().toString();
+          
+          const userPost = {
+            id: postId,
+            title: newPost.title || 'Historical Inquiry',
+            content: newPost.content,
+            author: 'You (Student)',
+            comments: []
+          };
+
+          setPosts(prev => [userPost, ...prev]);
+          setNewPost({ title: '', content: '' });
+
+          // Simulate AI Response
+          const aiReply = await generateClassmateReply(userPost.content);
+          
+          setTimeout(() => {
+            setPosts(prevPosts => prevPosts.map(p => {
+              if (p.id === postId) {
+                return {
+                  ...p,
+                  comments: [{
+                    id: 'ai-' + Date.now(),
+                    author: 'Gemini (AI Classmate)',
+                    text: aiReply,
+                    timestamp: 'Just now',
+                    replies: []
+                  }, ...p.comments]
+                };
+              }
+              return p;
+            }));
+          }, 1500);
+
+        } catch (error) {
+          console.error("Post submission error:", error);
+          alert("An error occurred while posting. Please try again.");
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      const simulateAIReplyToComment = async (postId, commentId) => {
+        setIsReplying(commentId);
+        try {
+          const post = posts.find(p => p.id === postId);
+          const comment = post?.comments.find(c => c.id === commentId);
+          if (!comment) return;
+
+          const aiText = await generateHistoricalAnalysis(comment.text);
+          
+          setPosts(prev => prev.map(p => {
+            if (p.id === postId) {
+              return {
+                ...p,
+                comments: p.comments.map(c => {
+                  if (c.id === commentId) {
+                    return {
+                      ...c,
+                      replies: [...c.replies, {
+                        id: 'ai-r-' + Date.now(),
+                        author: 'History Professor (AI)',
+                        text: aiText,
+                        timestamp: 'Just now',
+                        replies: []
+                      }]
+                    };
+                  }
+                  return c;
+                })
+              };
+            }
+            return p;
+          }));
+        } catch (error) {
+          console.error("Reply error:", error);
+        } finally {
+          setIsReplying(null);
+        }
+      };
+
+      return (
+        <div className="space-y-12">
+          <section className="bg-white p-8 rounded-xl shadow-xl border border-zinc-200 relative overflow-hidden">
+             <div className="absolute top-0 left-0 w-2 h-full bg-zinc-900"></div>
+            <h2 className="text-2xl font-black mb-6 flex items-center gap-2 text-zinc-900">
+              <IconMessage className="w-6 h-6" />
+              Task 2: Your Historical Claim
+            </h2>
+            <form onSubmit={handlePostSubmit} className="space-y-4">
+              <input
+                type="text"
+                placeholder="Claim Title (e.g., The Lend-Lease Act Evidence)"
+                value={newPost.title}
+                onChange={e => setNewPost({ ...newPost, title: e.target.value })}
+                className="w-full px-4 py-3 rounded-lg border-2 border-zinc-200 focus:border-zinc-800 outline-none transition-all font-bold font-serif text-lg bg-zinc-50"
+              />
+              <textarea
+                placeholder="Was the U.S. entry inevitable? Provide your argument and one piece of evidence here..."
+                value={newPost.content}
+                onChange={e => setNewPost({ ...newPost, content: e.target.value })}
+                className="w-full h-40 px-4 py-3 rounded-lg border-2 border-zinc-200 focus:border-zinc-800 outline-none transition-all resize-none body-font text-xl bg-zinc-50 placeholder:text-zinc-400"
+              />
+              <button
+                type="submit"
+                disabled={isSubmitting || !newPost.content}
+                className="w-full md:w-auto px-8 py-3 bg-zinc-900 text-white rounded-lg font-bold hover:bg-zinc-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 uppercase tracking-wider text-sm shadow-lg transform active:scale-95"
+              >
+                {isSubmitting ? <IconRefresh className="w-5 h-5 animate-spin" /> : <IconSend className="w-5 h-5" />}
+                Post to Board
+              </button>
+            </form>
+          </section>
+
+          <section className="space-y-8">
+            <div className="flex justify-between items-center border-b-2 border-zinc-200 pb-2">
+              <h2 className="text-xl font-black uppercase tracking-widest text-zinc-500">Class Discussion Feed</h2>
+              <span className="text-xs font-bold text-white bg-zinc-400 px-2 py-1 rounded-full">{posts.length} Contributions</span>
+            </div>
+
+            {posts.map(post => (
+              <div key={post.id} className="bg-[#fdfcfb] rounded-xl overflow-hidden shadow-sm border border-zinc-200 animate-fade-in">
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-white">
+                      <IconUser className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-zinc-900">{post.author}</h4>
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Student Researcher</p>
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2 text-zinc-800 leading-tight font-serif">{post.title}</h3>
+                  <p className="body-font text-xl text-zinc-700 leading-relaxed mb-6">{post.content}</p>
+
+                  <div className="space-y-4 pt-6 border-t border-zinc-100 bg-zinc-50/50 -mx-6 px-6 pb-6">
+                    <div className="flex items-center gap-2 mb-4 mt-4">
+                      <IconStar className="w-4 h-4 text-amber-500 fill-amber-500" />
+                      <span className="text-xs font-black uppercase text-zinc-500 tracking-widest">Discussion Thread</span>
+                    </div>
+                    
+                    {post.comments.map(comment => (
+                      <div key={comment.id} className="bg-white p-5 rounded-lg border border-zinc-200 shadow-sm ml-4 lg:ml-8 relative">
+                         <div className="absolute -left-6 top-6 w-6 h-px bg-zinc-300"></div>
+
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-bold text-sm text-zinc-800 flex items-center gap-2">
+                            {comment.author}
+                            {comment.author.includes('AI') && <span className="bg-purple-100 text-purple-800 text-[10px] px-1 rounded">BOT</span>}
+                          </span>
+                          <span className="text-[10px] text-zinc-400 uppercase">{comment.timestamp}</span>
+                        </div>
+                        <p className="text-zinc-600 text-base body-font mb-4 italic leading-relaxed">
+                          "{comment.text}"
+                        </p>
+                        
+                        <div className="space-y-3 mt-4">
+                          {comment.replies.map(reply => (
+                            <div key={reply.id} className="bg-amber-50/50 p-4 rounded-lg border-l-4 border-amber-500">
+                              <div className="flex items-center gap-2 mb-1">
+                                <IconInfo className="w-3 h-3 text-amber-600" />
+                                <span className="font-bold text-xs text-amber-900">{reply.author}</span>
+                              </div>
+                              <p className="text-zinc-800 text-sm body-font">{reply.text}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {!comment.replies.length && (
+                          <button
+                            onClick={() => simulateAIReplyToComment(post.id, comment.id)}
+                            disabled={isReplying === comment.id}
+                            className="mt-3 text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors uppercase tracking-wider"
+                          >
+                            {isReplying === comment.id ? (
+                              <IconRefresh className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <IconMessage className="w-3 h-3" />
+                            )}
+                            Task 3: Challenge this view
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </section>
+        </div>
+      );
+    };
+
+    const App = () => {
+      const [activeTask, setActiveTask] = useState(1);
+
+      return (
+        <div className="min-h-screen paper-texture text-zinc-900 selection:bg-amber-200 pb-20">
+          <nav className="sticky top-0 z-50 bg-[#e6ddd0]/95 backdrop-blur-md border-b border-zinc-400 px-4 py-3 shadow-md">
+            <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-3">
+                <IconNewspaper className="w-8 h-8 text-zinc-900" />
+                <h1 className="newspaper-font text-2xl font-black uppercase tracking-tighter text-zinc-900">
+                  The 1941 Bulletin
+                </h1>
+              </div>
+              <div className="flex items-center bg-zinc-800/10 rounded-full p-1 border border-zinc-400">
+                <button
+                  onClick={() => setActiveTask(1)}
+                  className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+                    activeTask === 1 ? 'bg-zinc-900 text-white shadow-lg transform scale-105' : 'hover:bg-white/50 text-zinc-700'
+                  }`}
+                >
+                  Task 1: News
+                </button>
+                <button
+                  onClick={() => setActiveTask(2)}
+                  className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+                    activeTask === 2 ? 'bg-zinc-900 text-white shadow-lg transform scale-105' : 'hover:bg-white/50 text-zinc-700'
+                  }`}
+                >
+                  Task 2/3: Discuss
+                </button>
+              </div>
+            </div>
+          </nav>
+
+          <main className="max-w-6xl mx-auto py-12 px-4 md:px-8">
+            {activeTask === 1 ? (
+              <div className="animate-fade-in">
+                <header className="text-center mb-12 border-b-4 border-zinc-900 pb-8">
+                  <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-[0.2em] border-b border-zinc-400 pb-2 mb-4 text-zinc-600">
+                    <span>Weather: Tropical Storm Expected</span>
+                    <span className="text-base text-black">Vol. XLIII No. 14,203</span>
+                    <span>Sunday, December 7, 1941</span>
+                  </div>
+                  <h1 className="newspaper-font text-8xl md:text-[10rem] font-black uppercase tracking-tighter leading-[0.8] mb-6 transform scale-y-110">
+                    WAR!
+                  </h1>
+                  <h2 className="newspaper-font text-3xl md:text-5xl font-bold italic text-zinc-800 border-t-2 border-zinc-900 pt-4">
+                    Oahu Bombing By Japanese Planes
+                  </h2>
+                </header>
+                <NewspaperSection />
+              </div>
+            ) : (
+              <div className="animate-fade-in">
+                <div className="mb-8 p-6 bg-[#eae4d9] border-2 border-dashed border-zinc-400 rounded-xl flex gap-4 items-start">
+                  <div className="bg-amber-700 p-2 rounded-full text-white shrink-0">
+                    <IconAlertCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-zinc-900 uppercase tracking-widest text-sm mb-2">Class Assignment Prompt</h3>
+                    <p className="text-xl body-font leading-relaxed text-zinc-800">
+                      "Was the U.S. entry into WWII inevitable even without the attack on Pearl Harbor?"
+                      <span className="block mt-2 text-base italic text-zinc-600">Provide evidence and engage with your classmates in the discussion below.</span>
+                    </p>
+                  </div>
+                </div>
+                <DiscussionBoard />
+              </div>
+            )}
+          </main>
+
+          <footer className="mt-20 border-t-2 border-zinc-300 py-12 px-4 bg-zinc-200/50">
+            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-zinc-600">
+              <div>
+                <h4 className="font-bold uppercase text-xs tracking-widest mb-4 text-zinc-900">Project Goal</h4>
+                <p className="text-sm body-font">Simulating the impact of Pearl Harbor through digital storytelling and critical historical inquiry.</p>
+              </div>
+              <div>
+                <h4 className="font-bold uppercase text-xs tracking-widest mb-4 text-zinc-900">Resources</h4>
+                <ul className="text-sm space-y-2 font-serif italic">
+                  <li>National Archives (US)</li>
+                  <li>Pearl Harbor Memorial</li>
+                  <li>FDR Library</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-bold uppercase text-xs tracking-widest mb-4 text-zinc-900">Context</h4>
+                <p className="text-xs">This is a student project simulation. All newspaper elements are designed for historical roleplay.</p>
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+  </script>
+</body>
+</html>
